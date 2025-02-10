@@ -19,7 +19,7 @@ datasources:
   - name: Elasticsearch
     type: elasticsearch
     access: proxy
-    url: http://elasticsearch:9200
+    url: http://192.168.3.26:9200
     database: "[logstash-]YYYY.MM.DD"
     basicAuth: true
     basicAuthUser: elastic

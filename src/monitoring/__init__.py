@@ -123,18 +123,22 @@ class MonitoringStack(ComponentResource):
                 "xpack.security.enabled=true",
                 "xpack.security.enrollment.enabled=true",
                 "xpack.security.http.ssl.enabled=false",
+                "xpack.security.transport.ssl.enabled=true",
+                "xpack.security.transport.ssl.verification_mode=certificate",
+                "xpack.security.transport.ssl.keystore.path=/usr/share/elasticsearch/config/certs/elastic-certificates.p12",
+                "xpack.security.transport.ssl.truststore.path=/usr/share/elasticsearch/config/certs/elastic-certificates.p12",
                 "ES_JAVA_OPTS=-Xms512m -Xmx512m",
                 "ELASTIC_PASSWORD=addi-aire-elastic",
-                "network.host=0.0.0.0",
+                "network.host=192.168.3.26",
                 "http.port=9200",
-                "http.host=0.0.0.0",
+                "http.host=192.168.3.26",
                 "http.cors.enabled=true",
                 "http.cors.allow-origin=\"*\"",
                 "http.cors.allow-headers=X-Requested-With,X-Auth-Token,Content-Type,Content-Length,Authorization",
                 "http.cors.allow-credentials=true"
             ],
             healthcheck={
-                "test": ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"],
+                "test": ["CMD", "curl", "-f", "http://192.168.3.26:9200/_cluster/health"],
                 "interval": "30s",
                 "timeout": "10s",
                 "retries": 3
@@ -150,7 +154,7 @@ class MonitoringStack(ComponentResource):
                 "name": network_ids["mgmt"]
             }],
             envs=[
-                "ELASTICSEARCH_HOSTS=http://elasticsearch:9200",
+                "ELASTICSEARCH_HOSTS=http://192.168.3.26:9200",
                 "MONITORING_UI_CONTAINER_ELASTICSEARCH_ENABLED=true",
                 "ELASTICSEARCH_USERNAME=elastic",
                 "ELASTICSEARCH_PASSWORD=addi-aire-elastic",
@@ -158,7 +162,7 @@ class MonitoringStack(ComponentResource):
                 "XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=addi-aire-kibana-key-must-be-at-least-32-chars"
             ],
             healthcheck={
-                "test": ["CMD", "curl", "-f", "http://localhost:5601/api/status"],
+                "test": ["CMD", "curl", "-f", "http://192.168.3.26:5601/api/status"],
                 "interval": "30s",
                 "timeout": "10s",
                 "retries": 3
@@ -177,8 +181,8 @@ class MonitoringStack(ComponentResource):
                 "name": network_ids["mgmt"]
             }],
             envs=[
-                "ELASTICSEARCH_URL=http://elasticsearch:9200",
-                "XPACK_MONITORING_ELASTICSEARCH_HOSTS=http://elasticsearch:9200"
+                "ELASTICSEARCH_URL=http://192.168.3.26:9200",
+                "XPACK_MONITORING_ELASTICSEARCH_HOSTS=http://192.168.3.26:9200"
             ],
             healthcheck={
                 "test": ["CMD", "curl", "-f", "http://localhost:9600"],
