@@ -51,3 +51,8 @@ config/nginx/ssl/
 # System
 .DS_Store
 Thumbs.db
+
+# Credentials and Secrets
+**/Secret*and*credentials.md
+**/secrets.md
+**/credentials.md
