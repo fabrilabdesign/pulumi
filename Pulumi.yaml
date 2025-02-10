@@ -1,0 +1,11 @@
+name: addi-aire
+description: This will deploy infrastructure to server and maintain my react app
+runtime:
+  name: python
+  options:
+    toolchain: pip
+    virtualenv: venv
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: python

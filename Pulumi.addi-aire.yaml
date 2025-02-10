@@ -1,0 +1,9 @@
+config:
+  addi-aire:registryServer:
+    secure: AAABAGRNsyQAo70RONWH1HMsi7b3i1pGqWcbWYvYW5ebzMMlkXCGSkY=
+  addi-aire:registryUsername:
+    secure: AAABANRrK5jyt1sYRdjfcRBaSMX6UFoXd54pFSeUjIQkP+Iuv0zRtQVRtMGH
+  addi-aire:registryPassword:
+    secure: AAABANHx+faCqxEHaU/m01Mi0vhkC9v+wLzMSED2SnSNF6fMRPhb5OKKE8z3
+  addi-aire:newRelicKey:
+    secure: AAABAH2qvezi+5a0TUTjQKEl4rblQ/0JRSoCZK0kO7jNbJ4+eJR22A==
