@@ -6,20 +6,12 @@ jenkins:
   scmCheckoutRetryCount: 2
   securityRealm:
     local:
-      allowsSignup: false
+      allowsSignup: true
       users:
         - id: "admin"
           password: "admin"
   authorizationStrategy:
-    roleBased:
-      roles:
-        global:
-          - name: "admin"
-            description: "Jenkins administrators"
-            permissions:
-              - "Overall/Administer"
-            assignments:
-              - "admin"
+    unsecured:  # Allow anonymous access
   remotingSecurity:
     enabled: true
   slaveAgentPort: 50000
@@ -35,8 +27,12 @@ security:
     useScriptSecurity: false
   apiToken:
     creationOfLegacyTokenEnabled: false
-    tokenGenerationOnCreationEnabled: false
+    tokenGenerationOnCreationEnabled: true
     usageStatisticsEnabled: true
+    staticTokens:
+      - name: "prometheus-metrics"
+        id: "prometheus"
+        value: "prometheus-token-123"  # You can change this token value
   queueItemAuthenticator:
     authenticators:
     - global:
@@ -55,9 +51,14 @@ unclassified:
         allowVersionOverride: true
         includeInChangesets: true
   prometheusConfiguration:
+    collectDiskUsage: false
+    collectingMetricsPeriodInSeconds: 120
     defaultNamespace: "jenkins"
+    jobAttributeName: "jenkins_job"
     path: "/prometheus"
     useAuthenticatedEndpoint: false
+    appendStatusToMetricName: false
+    appendTypeToMetricName: false
   timestamperConfig:
     allPipelines: true
     systemTimeFormat: "HH:mm:ss"

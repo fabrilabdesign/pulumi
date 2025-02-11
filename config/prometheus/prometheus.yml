@@ -12,12 +12,12 @@ scrape_configs:
       - targets: ['192.168.3.26:9100']
 
   - job_name: 'jenkins'
-    metrics_path: /jenkins/prometheus
+    metrics_path: /prometheus
     static_configs:
       - targets: ['192.168.3.26:8080']
 
   - job_name: 'elasticsearch'
-    metrics_path: /_monitoring/metrics
+    metrics_path: '/_prometheus/metrics'
     static_configs:
       - targets: ['192.168.3.26:9200']
 
@@ -25,10 +25,10 @@ scrape_configs:
     static_configs:
       - targets: ['192.168.3.26:3001']
 
-  - job_name: 'nginx'
-    metrics_path: /health
-    static_configs:
-      - targets: ['192.168.3.26']
+  # - job_name: 'nginx'
+  #   metrics_path: /health
+  #   static_configs:
+  #     - targets: ['192.168.3.26']
 
   - job_name: 'alertmanager'
     static_configs:
@@ -40,7 +40,28 @@ scrape_configs:
     static_configs:
       - targets: ['192.168.3.26:8082']
     metric_relabel_configs:
+      # Handle Docker Compose services if present
       - source_labels: [container_label_com_docker_compose_service]
         target_label: service
+        regex: (.+)
+      # For standalone containers, use the container name if no compose service label
+      - source_labels: [name]
+        target_label: service
+        regex: (.+)
+        replacement: $1
+      # Add project label from Docker Compose if present
       - source_labels: [container_label_com_docker_compose_project]
-        target_label: project 
+        target_label: project
+        regex: (.+)
+      # Add container image as a label
+      - source_labels: [image]
+        target_label: image
+        regex: (.+)
+      # Add a type label to distinguish container type
+      - source_labels: [container_label_org_opencontainers_image_title]
+        target_label: type
+        regex: (.+)
+      # Add version label if available
+      - source_labels: [container_label_org_opencontainers_image_version]
+        target_label: version
+        regex: (.+) 
