@@ -55,8 +55,8 @@ class VaultStack(ComponentResource):
             command=["vault", "server", "-config=/vault/config/config.hcl"],
             network_id=network_id,
             envs={
-                "VAULT_API_ADDR": "http://vault.addi-aire:8200",
-                "VAULT_CLUSTER_ADDR": "https://vault.addi-aire:8201"
+                "VAULT_API_ADDR": "http://vault:8200",
+                "VAULT_CLUSTER_ADDR": "https://vault:8201"
             },
             opts=ResourceOptions(parent=self)
         )
@@ -65,7 +65,7 @@ class VaultStack(ComponentResource):
         self._init_vault()
 
         self.register_outputs({
-            "vault_address": "http://vault.addi-aire:8200"
+            "vault_address": "http://192.168.3.26:8200"
         })
 
     def _init_vault(self):
@@ -76,7 +76,7 @@ class VaultStack(ComponentResource):
         init_cmd = Command("vault-init",
             create="vault operator init -key-shares=5 -key-threshold=3 -format=json",
             environment={
-                "VAULT_ADDR": "http://localhost:8200"
+                "VAULT_ADDR": "http://vault:8200"
             },
             opts=ResourceOptions(
                 parent=self,
@@ -151,6 +151,6 @@ class AutoVault(ComponentResource):
         )
         
         self.register_outputs({
-            "vault_address": "http://localhost:8220",
+            "vault_address": "http://192.168.3.26:8220",
             "vault_token": "addi-aire-now"
         }) 

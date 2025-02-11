@@ -62,14 +62,14 @@ pulumi.export("networks", {
 })
 
 pulumi.export("endpoints", {
-    "app": f"http://localhost:3000",
-    "jenkins": "http://localhost:8080/jenkins",
-    "nginx": "http://localhost",
-    "kibana": "http://localhost:5601",
-    "grafana": "http://localhost:3001",
-    "elasticsearch": "http://localhost:9200"
+    "app": f"http://192.168.3.26:3000",
+    "jenkins": "http://192.168.3.26:8080/jenkins",
+    "nginx": "http://192.168.3.26",
+    "kibana": "http://192.168.3.26:5601",
+    "grafana": "http://192.168.3.26:3001",
+    "elasticsearch": "http://192.168.3.26:9200"
 })
 
 # Export UI access
-pulumi.export("vault_url", "http://localhost:8200")
+pulumi.export("vault_url", "http://192.168.3.26:8200")
 pulumi.export("vault_token", "addi-aire-now")

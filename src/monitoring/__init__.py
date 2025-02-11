@@ -45,7 +45,7 @@ class MonitoringStack(ComponentResource):
                 "--web.listen-address=0.0.0.0:9090"
             ],
             healthcheck={
-                "test": ["CMD", "wget", "-q", "http://localhost:9090/-/healthy", "-O", "/dev/null"],
+                "test": ["CMD", "curl", "-f", "http://prometheus:9090/-/healthy", "-O", "/dev/null"],
                 "interval": "30s",
                 "timeout": "10s",
                 "retries": 3
@@ -71,11 +71,12 @@ class MonitoringStack(ComponentResource):
                 "--storage.path=/alertmanager"
             ],
             healthcheck={
-                "test": ["CMD", "wget", "-q", "http://localhost:9093/-/healthy"],
+                "test": ["CMD", "curl", "-f", "http://alertmanager:9093/-/healthy"],
                 "interval": "30s",
                 "timeout": "10s",
                 "retries": 3
             },
+            restart="unless-stopped",
             opts=ResourceOptions(parent=self)
         )
 
@@ -99,11 +100,12 @@ class MonitoringStack(ComponentResource):
                 "--web.listen-address=:9100"
             ],
             healthcheck={
-                "test": ["CMD", "wget", "-q", "http://localhost:9100/metrics"],
+                "test": ["CMD", "wget", "-q", "http://node-exporter:9100/metrics"],
                 "interval": "30s",
                 "timeout": "10s",
                 "retries": 3
             },
+            restart="unless-stopped",
             opts=ResourceOptions(parent=self)
         )
 
@@ -129,20 +131,21 @@ class MonitoringStack(ComponentResource):
                 "xpack.security.transport.ssl.truststore.path=/usr/share/elasticsearch/config/certs/elastic-certificates.p12",
                 "ES_JAVA_OPTS=-Xms512m -Xmx512m",
                 "ELASTIC_PASSWORD=addi-aire-elastic",
-                "network.host=192.168.3.26",
+                "network.host=0.0.0.0",
                 "http.port=9200",
-                "http.host=192.168.3.26",
+                "http.host=0.0.0.0",
                 "http.cors.enabled=true",
                 "http.cors.allow-origin=\"*\"",
                 "http.cors.allow-headers=X-Requested-With,X-Auth-Token,Content-Type,Content-Length,Authorization",
                 "http.cors.allow-credentials=true"
             ],
             healthcheck={
-                "test": ["CMD", "curl", "-f", "http://192.168.3.26:9200/_cluster/health"],
+                "test": ["CMD", "curl", "-f", "http://elasticsearch:9200/_cluster/health"],
                 "interval": "30s",
                 "timeout": "10s",
                 "retries": 3
             },
+            restart="unless-stopped",
             opts=ResourceOptions(parent=self)
         )
 
@@ -154,7 +157,7 @@ class MonitoringStack(ComponentResource):
                 "name": network_ids["mgmt"]
             }],
             envs=[
-                "ELASTICSEARCH_HOSTS=http://192.168.3.26:9200",
+                "ELASTICSEARCH_HOSTS=http://elasticsearch:9200",
                 "MONITORING_UI_CONTAINER_ELASTICSEARCH_ENABLED=true",
                 "ELASTICSEARCH_USERNAME=elastic",
                 "ELASTICSEARCH_PASSWORD=addi-aire-elastic",
@@ -162,11 +165,12 @@ class MonitoringStack(ComponentResource):
                 "XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=addi-aire-kibana-key-must-be-at-least-32-chars"
             ],
             healthcheck={
-                "test": ["CMD", "curl", "-f", "http://192.168.3.26:5601/api/status"],
+                "test": ["CMD", "curl", "-f", "http://kibana:5601/api/status"],
                 "interval": "30s",
                 "timeout": "10s",
                 "retries": 3
             },
+            restart="unless-stopped",
             opts=ResourceOptions(parent=self)
         )
 
@@ -181,15 +185,16 @@ class MonitoringStack(ComponentResource):
                 "name": network_ids["mgmt"]
             }],
             envs=[
-                "ELASTICSEARCH_URL=http://192.168.3.26:9200",
-                "XPACK_MONITORING_ELASTICSEARCH_HOSTS=http://192.168.3.26:9200"
+                "ELASTICSEARCH_URL=http://elasticsearch:9200",
+                "XPACK_MONITORING_ELASTICSEARCH_HOSTS=http://elasticsearch:9200"
             ],
             healthcheck={
-                "test": ["CMD", "curl", "-f", "http://localhost:9600"],
+                "test": ["CMD", "curl", "-f", "http://logstash:9600"],
                 "interval": "30s",
                 "timeout": "10s",
                 "retries": 3
             },
+            restart="unless-stopped",
             opts=ResourceOptions(parent=self)
         )
 
@@ -225,12 +230,19 @@ class MonitoringStack(ComponentResource):
                 "GF_SERVER_ROOT_URL=http://192.168.3.26:3001"
             ],
             healthcheck={
-                "test": ["CMD", "wget", "-q", "http://localhost:3000/api/health"],
+                "test": ["CMD", "wget", "-q", "http://grafana:3000/api/health"],
                 "interval": "30s",
                 "timeout": "10s",
                 "retries": 3,
                 "start_period": "30s"
             },
+            command=["/bin/sh", "-c", """
+                chown -R grafana:grafana /var/lib/grafana
+                chmod -R 755 /var/lib/grafana
+                /run.sh
+            """],
+            user="root",
+            restart="unless-stopped",
             opts=ResourceOptions(parent=self)
         )
 
@@ -290,7 +302,7 @@ class MonitoringStack(ComponentResource):
                 {"host_path": "/dev/disk", "container_path": "/dev/disk", "read_only": True}
             ],
             healthcheck={
-                "test": ["CMD", "wget", "-q", "http://localhost:8080/healthz"],
+                "test": ["CMD", "wget", "-q", "http://cadvisor:8080/healthz"],
                 "interval": "30s",
                 "timeout": "10s",
                 "retries": 3
@@ -306,6 +318,10 @@ class MonitoringStack(ComponentResource):
             volumes=[{
                 "volume_name": volumes["grafana"].name,
                 "container_path": "/loki"
+            }, {
+                "container_path": "/etc/loki",
+                "host_path": "/home/james/pulumi/config/loki",
+                "read_only": True
             }],
             networks_advanced=[{
                 "name": network_ids["mgmt"]
@@ -315,11 +331,12 @@ class MonitoringStack(ComponentResource):
                 "-target=all"
             ],
             healthcheck={
-                "test": ["CMD", "wget", "-q", "http://localhost:3100/ready"],
+                "test": ["CMD", "wget", "-q", "http://loki:3100/ready"],
                 "interval": "30s",
                 "timeout": "10s",
                 "retries": 3
             },
+            restart="unless-stopped",
             opts=ResourceOptions(parent=self)
         )
 
@@ -328,7 +345,8 @@ class MonitoringStack(ComponentResource):
             image="grafana/promtail:2.9.3",
             volumes=[
                 {"host_path": "/var/log", "container_path": "/var/log", "read_only": True},
-                {"host_path": "/var/lib/docker/containers", "container_path": "/var/lib/docker/containers", "read_only": True}
+                {"host_path": "/var/lib/docker/containers", "container_path": "/var/lib/docker/containers", "read_only": True},
+                {"host_path": "/home/james/pulumi/config/promtail", "container_path": "/etc/promtail", "read_only": True}
             ],
             networks_advanced=[{
                 "name": network_ids["mgmt"]
@@ -338,11 +356,12 @@ class MonitoringStack(ComponentResource):
                 f"-client.url=http://loki:3100/loki/api/v1/push"
             ],
             healthcheck={
-                "test": ["CMD", "wget", "-q", "http://localhost:9080/ready"],
+                "test": ["CMD", "wget", "-q", "http://promtail:9080/ready"],
                 "interval": "30s",
                 "timeout": "10s",
                 "retries": 3
             },
+            restart="unless-stopped",
             privileged=True,
             opts=ResourceOptions(parent=self)
         )
@@ -371,22 +390,23 @@ class MonitoringStack(ComponentResource):
                 "-target=all"
             ],
             healthcheck={
-                "test": ["CMD", "wget", "-q", "http://localhost:3200/ready"],
+                "test": ["CMD", "wget", "-q", "http://tempo:3200/ready"],
                 "interval": "30s",
                 "timeout": "10s",
                 "retries": 3
             },
+            restart="unless-stopped",
             opts=ResourceOptions(parent=self)
         )
 
         self.register_outputs({
             "urls": {
-                "elasticsearch": "http://localhost:9200",
-                "kibana": "http://localhost:5601",
-                "grafana": "http://localhost:3001",
-                "prometheus": "http://localhost:9090",
-                "alertmanager": "http://localhost:9093",
-                "node_exporter": "http://localhost:9100"
+                "elasticsearch": "http://192.168.3.26:9200",
+                "kibana": "http://192.168.3.26:5601",
+                "grafana": "http://192.168.3.26:3001",
+                "prometheus": "http://192.168.3.26:9090",
+                "alertmanager": "http://192.168.3.26:9093",
+                "node_exporter": "http://192.168.3.26:9100"
             },
             "ports": {
                 "logstash": 5044,

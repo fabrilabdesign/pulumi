@@ -232,5 +232,5 @@ class StorageStack(ComponentResource):
                 "backup": self.backup_service.id,
                 "recovery": self.recovery_service.id
             },
-            "recovery_api": "http://localhost:8081"
+            "recovery_api": "http://192.168.3.26:8081"
         }) 

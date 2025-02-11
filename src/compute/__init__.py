@@ -155,9 +155,11 @@ http {
                 wget -O /config/nginx/mime.types https://raw.githubusercontent.com/nginx/nginx/master/conf/mime.types
                 
                 cat > /config/nginx/nginx.conf << 'EOL'
-                {nginx_config}
-                EOL
+{nginx_config}
+EOL
 
+                chown -R root:root /config/nginx
+                chmod -R 755 /config/nginx
                 chmod 644 /config/nginx/nginx.conf
                 chmod 644 /config/nginx/mime.types
                 chmod 600 /config/nginx/ssl/server.key
@@ -166,7 +168,8 @@ http {
             ],
             volumes=[{
                 "host_path": "/home/james/pulumi/config/nginx",
-                "container_path": "/config/nginx"
+                "container_path": "/config/nginx",
+                "read_only": False
             }],
             networks_advanced=[{
                 "name": network_ids["mgmt"]
@@ -182,6 +185,7 @@ http {
                 """
                 mkdir -p /tmp/nginx/{cache,run,logs}
                 chmod -R 777 /tmp/nginx
+                tail -f /dev/null
                 """
             ],
             volumes=[{
@@ -191,6 +195,7 @@ http {
             networks_advanced=[{
                 "name": network_ids["mgmt"]
             }],
+            restart="unless-stopped",
             opts=ResourceOptions(parent=self)
         )
 
@@ -207,6 +212,10 @@ http {
             volumes=[{
                 "volume_name": self.jenkins_volume.name,
                 "container_path": "/var/jenkins_home"
+            }, {
+                "host_path": "/home/james/pulumi/config/jenkins",
+                "container_path": "/var/jenkins_home/casc_configs",
+                "read_only": True
             }],
             networks_advanced=[
                 {"name": network_ids["mgmt"]},
@@ -214,18 +223,31 @@ http {
             ],
             envs=[
                 "JENKINS_OPTS=--prefix=/jenkins",
-                "JAVA_OPTS=-Djenkins.install.runSetupWizard=false -Dhudson.model.DirectoryBrowserSupport.CSP=\"\"",
+                "JAVA_OPTS=-Djenkins.install.runSetupWizard=false -Dhudson.model.DirectoryBrowserSupport.CSP=\"\" -Djenkins.security.SystemReadPermission=true -Xmx2g -Djava.awt.headless=true -Djenkins.install.runSetupWizard=false",
                 "JENKINS_URL=http://192.168.3.26:8080/jenkins",
-                "TZ=UTC"
+                "CASC_JENKINS_CONFIG=/var/jenkins_home/casc_configs/jenkins.yaml",
+                "TZ=UTC",
+                "JENKINS_UC=https://updates.jenkins.io",
+                "JENKINS_UC_EXPERIMENTAL=https://updates.jenkins.io/experimental",
+                "JENKINS_INCREMENTALS_REPO_MIRROR=https://repo.jenkins-ci.org/incrementals"
             ],
             healthcheck={
-                "test": ["CMD", "curl", "-f", "http://localhost:8080/jenkins/prometheus || exit 1"],
+                "test": ["CMD", "curl", "-f", "http://192.168.3.26:8080/jenkins/login || exit 1"],
                 "interval": "30s",
                 "timeout": "10s",
                 "retries": 3,
-                "start_period": "60s"
+                "start_period": "180s"
             },
-            command=["/bin/sh", "-c", "chown -R jenkins:jenkins /var/jenkins_home && /usr/local/bin/jenkins.sh"],
+            command=["/bin/sh", "-c", """
+                echo "Installing plugins..."
+                jenkins-plugin-cli --plugin-file /var/jenkins_home/casc_configs/plugins.txt --verbose
+                echo "Waiting for plugin installation to complete..."
+                sleep 60
+                chown -R jenkins:jenkins /var/jenkins_home
+                chmod -R 755 /var/jenkins_home
+                echo "Starting Jenkins..."
+                /usr/local/bin/jenkins.sh
+            """],
             capabilities=ContainerCapabilitiesArgs(
                 adds=["IPC_LOCK"]
             ),
@@ -261,7 +283,7 @@ http {
                 "name": network_ids["prod"]
             }],
             healthcheck={
-                "test": ["CMD", "curl", "-f", "http://localhost/health || exit 1"],
+                "test": ["CMD", "curl", "-f", "http://192.168.3.26/health || exit 1"],
                 "interval": "30s",
                 "timeout": "10s",
                 "retries": 3,
@@ -277,8 +299,8 @@ http {
         )
 
         self.register_outputs({
-            "jenkins_url": "http://localhost:8080/jenkins",
-            "nginx_url": "http://localhost",
+            "jenkins_url": "http://192.168.3.26:8080/jenkins",
+            "nginx_url": "http://192.168.3.26",
             "container_ips": {
                 "jenkins": self.jenkins.networks_advanced.apply(
                     lambda networks: networks[0].get("ip_address", "pending") if networks else None

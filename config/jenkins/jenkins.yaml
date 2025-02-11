@@ -1,0 +1,63 @@
+jenkins:
+  systemMessage: "Addi-Aire Jenkins Server"
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "admin"
+          password: "admin"
+  authorizationStrategy:
+    roleBased:
+      roles:
+        global:
+          - name: "admin"
+            description: "Jenkins administrators"
+            permissions:
+              - "Overall/Administer"
+            assignments:
+              - "admin"
+  remotingSecurity:
+    enabled: true
+  slaveAgentPort: 50000
+  numExecutors: 2
+
+unclassified:
+  location:
+    url: "http://192.168.3.26:8080/jenkins"
+
+tool:
+  git:
+    installations:
+      - name: "Default"
+        home: "git"
+
+jobs:
+  - script: >
+      folder('Infrastructure') {
+          description('Infrastructure related jobs')
+      }
+      folder('Applications') {
+          description('Application related jobs')
+      }
+
+security:
+  globalJobDslSecurityConfiguration:
+    useScriptSecurity: false
+  apiToken:
+    creationOfLegacyTokenEnabled: false
+    tokenGenerationOnCreationEnabled: false
+    usageStatisticsEnabled: true
+
+credentials:
+  system:
+    domainCredentials:
+      - domain:
+          name: "global"
+          description: "Global credentials"
+        credentials:
+          - usernamePassword:
+              scope: GLOBAL
+              id: "github-credentials"
+              username: "jenkins"
+              password: "change-me"
+              description: "GitHub credentials" 

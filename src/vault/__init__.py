@@ -41,6 +41,6 @@ class AutoVault(ComponentResource):
         )
         
         self.register_outputs({
-            "vault_address": "http://localhost:8200",
+            "vault_address": "http://192.168.3.26:8200",
             "vault_token": "addi-aire-now"
         }) 
