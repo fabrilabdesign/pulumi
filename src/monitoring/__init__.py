@@ -111,8 +111,12 @@ class MonitoringStack(ComponentResource):
 
         # Elasticsearch
         self.elasticsearch = Container("elasticsearch",
-            image="docker.elastic.co/elasticsearch/elasticsearch:8.12.1",
-            ports=[{"internal": 9200, "external": 9200}],
+            image="elasticsearch:8.12.1",
+            name="elasticsearch",
+            ports=[{
+                "internal": 9200,
+                "external": 9200
+            }],
             volumes=[{
                 "volume_name": volumes["elasticsearch"].name,
                 "container_path": "/usr/share/elasticsearch/data"
@@ -122,28 +126,17 @@ class MonitoringStack(ComponentResource):
             }],
             envs=[
                 "discovery.type=single-node",
-                "xpack.security.enabled=true",
-                "xpack.security.enrollment.enabled=true",
-                "xpack.security.http.ssl.enabled=false",
-                "xpack.security.transport.ssl.enabled=true",
-                "xpack.security.transport.ssl.verification_mode=certificate",
-                "xpack.security.transport.ssl.keystore.path=/usr/share/elasticsearch/config/certs/elastic-certificates.p12",
-                "xpack.security.transport.ssl.truststore.path=/usr/share/elasticsearch/config/certs/elastic-certificates.p12",
+                "xpack.security.enabled=false",
                 "ES_JAVA_OPTS=-Xms512m -Xmx512m",
-                "ELASTIC_PASSWORD=addi-aire-elastic",
                 "network.host=0.0.0.0",
-                "http.port=9200",
-                "http.host=0.0.0.0",
-                "http.cors.enabled=true",
-                "http.cors.allow-origin=\"*\"",
-                "http.cors.allow-headers=X-Requested-With,X-Auth-Token,Content-Type,Content-Length,Authorization",
-                "http.cors.allow-credentials=true"
+                "http.port=9200"
             ],
             healthcheck={
-                "test": ["CMD", "curl", "-f", "http://elasticsearch:9200/_cluster/health"],
+                "test": ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health || exit 1"],
                 "interval": "30s",
                 "timeout": "10s",
-                "retries": 3
+                "retries": 3,
+                "start_period": "60s"
             },
             restart="unless-stopped",
             opts=ResourceOptions(parent=self)
@@ -151,24 +144,26 @@ class MonitoringStack(ComponentResource):
 
         # Kibana
         self.kibana = Container("kibana",
-            image="docker.elastic.co/kibana/kibana:8.12.1",
-            ports=[{"internal": 5601, "external": 5601}],
+            image="kibana:8.12.1",
+            name="kibana",
+            ports=[{
+                "internal": 5601,
+                "external": 5601
+            }],
             networks_advanced=[{
                 "name": network_ids["mgmt"]
             }],
             envs=[
                 "ELASTICSEARCH_HOSTS=http://elasticsearch:9200",
-                "MONITORING_UI_CONTAINER_ELASTICSEARCH_ENABLED=true",
-                "ELASTICSEARCH_USERNAME=elastic",
-                "ELASTICSEARCH_PASSWORD=addi-aire-elastic",
-                "XPACK_SECURITY_ENABLED=true",
-                "XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=addi-aire-kibana-key-must-be-at-least-32-chars"
+                "SERVER_NAME=kibana",
+                "SERVER_HOST=0.0.0.0"
             ],
             healthcheck={
-                "test": ["CMD", "curl", "-f", "http://kibana:5601/api/status"],
+                "test": ["CMD", "curl", "-f", "http://localhost:5601/api/status || exit 1"],
                 "interval": "30s",
                 "timeout": "10s",
-                "retries": 3
+                "retries": 3,
+                "start_period": "60s"
             },
             restart="unless-stopped",
             opts=ResourceOptions(parent=self)

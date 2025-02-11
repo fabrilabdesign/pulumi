@@ -1,5 +1,9 @@
 jenkins:
   systemMessage: "Addi-Aire Jenkins Server"
+  mode: NORMAL
+  numExecutors: 2
+  labelString: "built-in"
+  scmCheckoutRetryCount: 2
   securityRealm:
     local:
       allowsSignup: false
@@ -19,17 +23,59 @@ jenkins:
   remotingSecurity:
     enabled: true
   slaveAgentPort: 50000
-  numExecutors: 2
+  agentProtocols:
+    - "JNLP4-connect"
+    - "Ping"
+  crumbIssuer:
+    standard:
+      excludeClientIPFromCrumb: false
+
+security:
+  globalJobDslSecurityConfiguration:
+    useScriptSecurity: false
+  apiToken:
+    creationOfLegacyTokenEnabled: false
+    tokenGenerationOnCreationEnabled: false
+    usageStatisticsEnabled: true
+  queueItemAuthenticator:
+    authenticators:
+    - global:
+        strategy: triggeringUsersAuthorizationStrategy
+  sSHD:
+    port: -1
 
 unclassified:
   location:
-    url: "http://192.168.3.26:8080/jenkins"
+    url: "http://192.168.3.26:8080"
+  globalLibraries:
+    libraries:
+      - name: "shared-library"
+        defaultVersion: "main"
+        implicit: true
+        allowVersionOverride: true
+        includeInChangesets: true
+  prometheusConfiguration:
+    defaultNamespace: "jenkins"
+    path: "/prometheus"
+    useAuthenticatedEndpoint: false
+  timestamperConfig:
+    allPipelines: true
+    systemTimeFormat: "HH:mm:ss"
+    elapsedTimeFormat: "HH:mm:ss.S"
 
 tool:
   git:
     installations:
       - name: "Default"
         home: "git"
+  maven:
+    installations:
+      - name: "Maven 3"
+        properties:
+          - installSource:
+              installers:
+                - maven:
+                    id: "3.9.6"
 
 jobs:
   - script: >
@@ -39,14 +85,6 @@ jobs:
       folder('Applications') {
           description('Application related jobs')
       }
-
-security:
-  globalJobDslSecurityConfiguration:
-    useScriptSecurity: false
-  apiToken:
-    creationOfLegacyTokenEnabled: false
-    tokenGenerationOnCreationEnabled: false
-    usageStatisticsEnabled: true
 
 credentials:
   system:
