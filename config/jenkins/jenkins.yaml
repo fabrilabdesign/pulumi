@@ -63,6 +63,35 @@ unclassified:
     allPipelines: true
     systemTimeFormat: "HH:mm:ss"
     elapsedTimeFormat: "HH:mm:ss.S"
+  dockerRegistry:
+    registry:
+      - url: "https://192.168.3.26:5000"
+        credentialsId: "registry-credentials"
+  docker:
+    dockerTlsVerify: false
+    registryCredentials:
+      - credentialsId: "registry-credentials"
+        url: "https://192.168.3.26:5000"
+
+credentials:
+  system:
+    domainCredentials:
+      - domain:
+          name: "global"
+          description: "Global credentials"
+        credentials:
+          - usernamePassword:
+              scope: GLOBAL
+              id: "github-credentials"
+              username: "jenkins"
+              password: "change-me"
+              description: "GitHub credentials"
+          - usernamePassword:
+              scope: GLOBAL
+              id: "registry-credentials"
+              username: "${REGISTRY_USERNAME}"
+              password: "${REGISTRY_PASSWORD}"
+              description: "Docker Registry credentials"
 
 tool:
   git:
@@ -85,18 +114,4 @@ jobs:
       }
       folder('Applications') {
           description('Application related jobs')
-      }
-
-credentials:
-  system:
-    domainCredentials:
-      - domain:
-          name: "global"
-          description: "Global credentials"
-        credentials:
-          - usernamePassword:
-              scope: GLOBAL
-              id: "github-credentials"
-              username: "jenkins"
-              password: "change-me"
-              description: "GitHub credentials" 
+      } 

@@ -7,6 +7,10 @@ from src.monitoring import MonitoringStack
 from src.storage import StorageStack
 from pulumi import Output
 from src.security.vault import VaultStack, AutoVault
+from src.registry import Registry
+from src.registry.certs import generate_registry_certs
+from src.registry.auth import generate_htpasswd
+from pathlib import Path
 
 # Get configuration
 config = pulumi.Config()
@@ -18,6 +22,24 @@ registry_config = {
     "username": config.require_secret("registryUsername"),
     "password": config.require_secret("registryPassword")
 }
+
+# Set up registry
+registry_config_dir = Path('config/registry')
+hostname = '192.168.3.26'
+
+# Generate certificates
+key_path, cert_path = generate_registry_certs(registry_config_dir / 'certs', hostname)
+
+# Generate auth credentials
+registry_password = generate_htpasswd(registry_config_dir / 'auth', 'admin')
+
+# Create registry instance
+registry = Registry('registry')
+
+# Store registry credentials securely
+pulumi.export('registry_username', 'admin')
+pulumi.export('registry_password', registry_password)
+pulumi.export('registry_url', f'https://{hostname}:5000')
 
 # Create networking stack
 network = NetworkingStack("main")

@@ -17,27 +17,28 @@ class ContainerStack(ComponentResource):
             opts=ResourceOptions(parent=self)
         )
 
-        # Jenkins container with plugins and configuration
+        # Create Jenkins container
         self.jenkins = Container("jenkins",
             image="jenkins/jenkins:lts-jdk17",
             name="jenkins",
-            ports=[{
-                "internal": 8080,
-                "external": 8080
-            }, {
-                "internal": 50000,
-                "external": 50000
-            }],
-            volumes=[{
-                "volume_name": self.jenkins_volume.name,
-                "container_path": "/var/jenkins_home"
-            }],
-            networks_advanced=[{
-                "name": network_ids["mgmt"]
-            }],
+            ports=[
+                {"internal": 8080, "external": 8080},
+                {"internal": 50000, "external": 50000}
+            ],
+            volumes=[
+                {"volume_name": self.jenkins_volume.name, "container_path": "/var/jenkins_home"},
+                {"host_path": "/var/run/docker.sock", "container_path": "/var/run/docker.sock"}
+            ],
             envs=[
-                "JAVA_OPTS=-Xmx2g -Djava.awt.headless=true",
-                "TZ=UTC"
+                f"JENKINS_OPTS=--prefix=/jenkins",
+                f"REGISTRY_USERNAME={registry_config['username']}",
+                f"REGISTRY_PASSWORD={registry_config['password']}",
+                f"DOCKER_HOST=unix:///var/run/docker.sock",
+                f"DOCKER_CERT_PATH=/certs/client",
+                f"DOCKER_TLS_VERIFY=1"
+            ],
+            networks_advanced=[
+                {"name": network_ids["mgmt"], "aliases": ["jenkins"]}
             ],
             healthcheck={
                 "test": ["CMD", "curl", "-f", "http://localhost:8080 || exit 1"],
