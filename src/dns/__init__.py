@@ -14,8 +14,8 @@ class DnsStack(ComponentResource):
         # Bind9 container
         self.bind = Container("bind9",
             image="ubuntu/bind9:latest",
-            ports=[{"internal": 53, "external": 53, "protocol": "tcp"},
-                   {"internal": 53, "external": 53, "protocol": "udp"}],
+            ports=[{"internal": "53", "external": "53", "protocol": "tcp"},
+                   {"internal": "53", "external": "53", "protocol": "udp"}],
             volumes=[{
                 "volume_name": self.zone_volume.name,
                 "container_path": "/etc/bind/zones"

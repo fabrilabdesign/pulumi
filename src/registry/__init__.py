@@ -7,7 +7,7 @@ from typing import Optional, Dict, Any
 class RegistryArgs:
     def __init__(self,
                  host: str = "192.168.3.26",
-                 port: int = 5000,
+                 port: str = "5000",
                  config_path: Optional[str] = None) -> None:
         self.host = host
         self.port = port
@@ -16,6 +16,7 @@ class RegistryArgs:
 class Registry(ComponentResource):
     def __init__(self,
                  name: str,
+                 network_id: str,
                  args: RegistryArgs = None,
                  opts: Optional[ResourceOptions] = None):
         super().__init__('custom:registry:Registry', name, None, opts)
@@ -35,14 +36,6 @@ class Registry(ComponentResource):
         for dir_path in [config_dir, certs_dir, auth_dir]:
             dir_path.mkdir(parents=True, exist_ok=True)
 
-        # Create registry network
-        self.network = docker.Network(
-            make_name("network"),
-            name=make_name("network"),
-            driver='bridge',
-            opts=ResourceOptions(parent=self)
-        )
-
         # Create registry volume
         self.volume = docker.Volume(
             make_name("volume"),
@@ -55,8 +48,8 @@ class Registry(ComponentResource):
             'name': name,
             'image': 'registry:2',
             'ports': [{
-                'internal': args.port,
-                'external': args.port,
+                'internal': str(args.port),
+                'external': str(args.port),
                 'protocol': 'tcp'
             }],
             'volumes': [
@@ -80,7 +73,8 @@ class Registry(ComponentResource):
             'restart': 'always',
             'networks_advanced': [
                 docker.ContainerNetworksAdvancedArgs(
-                    name=self.network.name
+                    name=network_id,
+                    aliases=["registry"]
                 )
             ],
             'envs': [
@@ -92,7 +86,7 @@ class Registry(ComponentResource):
                 'test': ["CMD", "curl", "-f", f"https://localhost:{args.port}/v2/ || exit 1"],
                 'interval': "30s",
                 'timeout': "10s",
-                'retries': 3,
+                'retries': "3",
                 'start_period': "10s"
             }
         }
@@ -102,7 +96,7 @@ class Registry(ComponentResource):
             name,
             opts=ResourceOptions(
                 parent=self,
-                depends_on=[self.network, self.volume],
+                depends_on=[self.volume],
                 custom_timeouts={"create": "10m", "update": "10m", "delete": "10m"}
             ),
             **container_config
@@ -115,7 +109,7 @@ class Registry(ComponentResource):
             'scheme': 'https',
             'tls_config': {
                 'ca_file': '/etc/docker/certs.d/{args.host}:{args.port}/ca.crt',
-                'insecure_skip_verify': True
+                'insecure_skip_verify': "true"
             },
             'static_configs': [{
                 'targets': [f'{args.host}:{args.port}']
@@ -124,8 +118,6 @@ class Registry(ComponentResource):
 
         # Register component outputs
         self.register_outputs({
-            'network_id': self.network.id,
-            'network_name': self.network.name,
             'volume_name': self.volume.name,
             'container_id': self.container.id,
             'registry_url': Output.concat("https://", args.host, ":", Output.from_input(args.port)),

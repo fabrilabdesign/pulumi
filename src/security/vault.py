@@ -1,6 +1,6 @@
 from pulumi import ResourceOptions, ComponentResource
 from pulumi_vault import AuthBackend, Mount
-from pulumi_docker import Container, Volume, ContainerCapabilitiesArgs
+from pulumi_docker import Container, Volume, ContainerCapabilitiesArgs, ContainerNetworksAdvancedArgs
 import json
 import pulumi
 from pulumi_aws import kms
@@ -45,15 +45,18 @@ class VaultStack(ComponentResource):
         self.vault = Container("vault-server",
             image="vault:1.15.0",
             ports=[
-                {"internal": 8200, "external": 8200},
-                {"internal": 8201, "external": 8201, "protocol": "tcp"}
+                {"internal": "8200", "external": "8200"},
+                {"internal": "8201", "external": "8201", "protocol": "tcp"}
             ],
             volumes=[{
                 "volume_name": self.storage.name,
                 "container_path": "/vault/data"
             }],
             command=["vault", "server", "-config=/vault/config/config.hcl"],
-            network_id=network_id,
+            networks_advanced=[ContainerNetworksAdvancedArgs(
+                name=network_id,
+                aliases=["vault"]
+            )],
             envs={
                 "VAULT_API_ADDR": "http://vault:8200",
                 "VAULT_CLUSTER_ADDR": "https://vault:8201"
@@ -116,9 +119,12 @@ class BasicVault(ComponentResource):
     def __init__(self, network_id: str):
         self.vault = Container("vault",
             image="vault:1.15.0",
-            ports=[{"internal": 8200, "external": 8200}],
+            ports=[{"internal": "8200", "external": "8200"}],
             command=["vault", "server", "-dev"],
-            network_id=network_id,
+            networks_advanced=[ContainerNetworksAdvancedArgs(
+                name=network_id,
+                aliases=["vault"]
+            )],
             envs={
                 "VAULT_DEV_ROOT_TOKEN_ID": "addi-aire-temp",
                 "VAULT_DEV_LISTEN_ADDRESS": "0.0.0.0:8200"
@@ -132,8 +138,11 @@ class AutoVault(ComponentResource):
         # Self-contained vault with auto-unseal
         self.vault = Container("vault",
             image="hashicorp/vault:1.15.6",
-            ports=[{"internal": 8200, "external": 8220}],
-            networks_advanced=[{"name": network_id}],
+            ports=[{"internal": "8200", "external": "8220"}],
+            networks_advanced=[ContainerNetworksAdvancedArgs(
+                name=network_id,
+                aliases=["vault"]
+            )],
             envs=[
                 "VAULT_DEV_ROOT_TOKEN_ID=addi-aire-now",
                 "VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200"

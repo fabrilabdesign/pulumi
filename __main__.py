@@ -33,16 +33,16 @@ key_path, cert_path = generate_registry_certs(registry_config_dir / 'certs', hos
 # Generate auth credentials
 registry_password = generate_htpasswd(registry_config_dir / 'auth', 'admin')
 
+# Create networking stack
+network = NetworkingStack("main")
+
 # Create registry instance
-registry = Registry('registry')
+registry = Registry('registry', network_id=network.mgmt_network.id)
 
 # Store registry credentials securely
 pulumi.export('registry_username', 'admin')
 pulumi.export('registry_password', registry_password)
 pulumi.export('registry_url', f'https://{hostname}:5000')
-
-# Create networking stack
-network = NetworkingStack("main")
 
 # Create container stack with appropriate network
 containers = ContainerStack("main",

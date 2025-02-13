@@ -6,10 +6,13 @@ class NetworkingStack(ComponentResource):
     def __init__(self, name: str, opts: ResourceOptions = None):
         super().__init__("addi-aire:networking:NetworkingStack", name, None, opts)
 
-        # Production network (172.18.0.0/16)
+        # Production network - isolated
         self.prod_network = Network("prod-network",
             name="addi-aire-prod",
             driver="bridge",
+            internal=True,  # No external connectivity
+            ipv6=False,
+            attachable=True,  # Allow external containers to connect
             ipam_configs=[{
                 "subnet": "172.18.0.0/16",
                 "gateway": "172.18.0.1"
@@ -17,10 +20,13 @@ class NetworkingStack(ComponentResource):
             opts=ResourceOptions(parent=self)
         )
 
-        # Development network (172.19.0.0/16)
+        # Development network - isolated
         self.dev_network = Network("dev-network",
             name="addi-aire-dev",
             driver="bridge",
+            internal=True,
+            ipv6=False,
+            attachable=True,
             ipam_configs=[{
                 "subnet": "172.19.0.0/16",
                 "gateway": "172.19.0.1"
@@ -28,10 +34,13 @@ class NetworkingStack(ComponentResource):
             opts=ResourceOptions(parent=self)
         )
 
-        # Management network (172.20.0.0/16)
+        # Management network - external access
         self.mgmt_network = Network("mgmt-network",
             name="addi-aire-mgmt",
             driver="bridge",
+            internal=False,  # Allow external connectivity
+            ipv6=False,
+            attachable=True,
             ipam_configs=[{
                 "subnet": "172.20.0.0/16",
                 "gateway": "172.20.0.1"
@@ -40,10 +49,24 @@ class NetworkingStack(ComponentResource):
         )
 
         self.register_outputs({
-            "prod_network_id": self.prod_network.id,
-            "dev_network_id": self.dev_network.id,
-            "mgmt_network_id": self.mgmt_network.id,
-            "prod_network_name": self.prod_network.name,
-            "dev_network_name": self.dev_network.name,
-            "mgmt_network_name": self.mgmt_network.name
+            "networks": {
+                "prod": {
+                    "id": self.prod_network.id,
+                    "name": self.prod_network.name,
+                    "subnet": "172.18.0.0/16",
+                    "gateway": "172.18.0.1"
+                },
+                "dev": {
+                    "id": self.dev_network.id,
+                    "name": self.dev_network.name,
+                    "subnet": "172.19.0.0/16",
+                    "gateway": "172.19.0.1"
+                },
+                "mgmt": {
+                    "id": self.mgmt_network.id,
+                    "name": self.mgmt_network.name,
+                    "subnet": "172.20.0.0/16",
+                    "gateway": "172.20.0.1"
+                }
+            }
         }) 
